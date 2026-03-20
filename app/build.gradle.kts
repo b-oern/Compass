@@ -30,11 +30,11 @@ java {
 }
 
 android {
-    namespace = "com.bobek.compass"
+    namespace = "net.bsnx.apps.compass"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.bobek.compass"
+        applicationId = "net.bsnx.apps.compass"
         minSdk = 23
         targetSdk = 36
         versionCode = 31
@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.androidx.preference.ktx)
     implementation(libs.material)
     implementation(libs.oss.licenses.parser)
+    implementation(libs.androidx.activity)
 
     testImplementation(libs.junit)
 

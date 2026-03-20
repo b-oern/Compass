@@ -21,8 +21,8 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        tools:context=".MainActivity"
-        tools:showIn="@layout/activity_main">
+        tools:context="net.bsnx.apps.compass.MainActivity"
+        tools:showIn="@layout/activity_compass">
 
     <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"

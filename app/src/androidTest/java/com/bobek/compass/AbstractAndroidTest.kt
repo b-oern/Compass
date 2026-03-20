@@ -23,8 +23,10 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.bobek.compass.model.Azimuth
-import com.bobek.compass.model.SensorAccuracy
+import net.bsnx.apps.compass.CompassFragment
+import net.bsnx.apps.compass.model.Azimuth
+import net.bsnx.apps.compass.model.SensorAccuracy
+import net.bsnx.apps.compass.MainActivity
 import org.junit.Rule
 import org.junit.runner.RunWith
 

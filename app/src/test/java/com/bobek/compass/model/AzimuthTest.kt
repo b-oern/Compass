@@ -18,6 +18,8 @@
 
 package com.bobek.compass.model
 
+import net.bsnx.apps.compass.model.Azimuth
+import net.bsnx.apps.compass.model.CardinalDirection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test

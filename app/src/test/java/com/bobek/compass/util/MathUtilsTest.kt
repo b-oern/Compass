@@ -18,7 +18,8 @@
 
 package com.bobek.compass.util
 
-import com.bobek.compass.model.Azimuth
+import net.bsnx.apps.compass.model.Azimuth
+import net.bsnx.apps.compass.util.MathUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

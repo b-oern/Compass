@@ -11,6 +11,7 @@ ossLicensesParser = "1.1.0"
 ossLicensesPlugin = "0.10.6"
 preferenceKtx = "1.2.1"
 screengrab = "2.1.1"
+activity = "1.8.0"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
@@ -24,6 +25,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 oss-licenses-parser = { group = "de.philipp-bobek", name = "oss-licenses-parser", version.ref = "ossLicensesParser" }
 oss-licenses-plugin = { group = "com.google.android.gms", name = "oss-licenses-plugin", version.ref = "ossLicensesPlugin" }
 screengrab = { group = "tools.fastlane", name = "screengrab", version.ref = "screengrab" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

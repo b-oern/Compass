@@ -26,6 +26,12 @@
             app:title="@string/compass"
             app:icon="@drawable/ic_compass">
 
+        <Preference
+                app:key="pref_path_list"
+                app:title="Heutige Einträge"
+                app:summary="Alle aufgezeichneten Schritte heute anzeigen"
+                app:icon="@drawable/ic_compass" />
+
         <SwitchPreferenceCompat
                 app:key="true_north"
                 app:title="@string/true_north"

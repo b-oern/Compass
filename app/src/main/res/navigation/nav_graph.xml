@@ -26,7 +26,7 @@
 
     <fragment
             android:id="@+id/CompassFragment"
-            android:name="com.bobek.compass.CompassFragment"
+            android:name="net.bsnx.apps.compass.CompassFragment"
             android:label="@string/compass"
             tools:layout="@layout/fragment_compass">
 
@@ -37,7 +37,7 @@
 
     <fragment
             android:id="@+id/SettingsFragment"
-            android:name="com.bobek.compass.SettingsFragment"
+            android:name="net.bsnx.apps.compass.SettingsFragment"
             android:label="@string/settings">
 
         <action
@@ -47,7 +47,7 @@
 
     <fragment
             android:id="@+id/ThirdPartyLicensesFragment"
-            android:name="com.bobek.compass.ThirdPartyLicensesFragment"
+            android:name="net.bsnx.apps.compass.ThirdPartyLicensesFragment"
             android:label="@string/third_party_licenses">
 
         <action
@@ -57,7 +57,7 @@
 
     <fragment
             android:id="@+id/ThirdPartyLicenseFragment"
-            android:name="com.bobek.compass.ThirdPartyLicenseFragment"
+            android:name="net.bsnx.apps.compass.ThirdPartyLicenseFragment"
             android:label="{libraryName}">
 
         <argument

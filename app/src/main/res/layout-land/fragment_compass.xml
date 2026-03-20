@@ -21,14 +21,14 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        tools:context=".CompassFragment">
+        tools:context="net.bsnx.apps.compass.CompassFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="@dimen/root_layout_padding">
 
-        <com.bobek.compass.view.CompassView
+        <net.bsnx.apps.compass.view.CompassView
                 android:id="@+id/compass"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
@@ -157,7 +157,7 @@
 
         <variable
                 name="model"
-                type="com.bobek.compass.view.CompassViewModel" />
+                type="net.bsnx.apps.compass.view.CompassViewModel" />
     </data>
 
 </layout>
