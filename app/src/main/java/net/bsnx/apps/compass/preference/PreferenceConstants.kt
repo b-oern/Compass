@@ -33,6 +33,16 @@ object PreferenceConstants {
 
     const val ACCESS_LOCATION_PERMISSION_REQUESTED = "access_location_permission_requested"
 
+    /** Schrittweite in Metern, als String gespeichert (EditTextPreference). */
+    const val STEP_LENGTH = "step_length"
+    const val STEP_LENGTH_DEFAULT = 0.9f
+
+    /** GPS-Positionen als Referenz zur Schrittmessung aufzeichnen. */
+    const val GPS_TRACKING = "gps_tracking"
+
+    /** ID des PathItems, an dem das nächste „Add“ fortsetzt (per Long-Press in der Karte). */
+    const val ACTIVE_ITEM_ID = "active_item_id"
+
     const val THIRD_PARTY_LICENSES = "third_party_licenses"
 
     const val VERSION = "version"

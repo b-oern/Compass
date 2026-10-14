@@ -22,6 +22,7 @@ import android.content.Context;
 import android.graphics.*;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -96,12 +97,19 @@ public class GeometryView extends View {
         public final int    color;
         public final String tooltip;
         public final OnTapListener onTap;
+        public final OnTapListener onLongTap;
 
         public DrawingPoint(float x, float y, int color, float radius,
                             String tooltip, OnTapListener onTap) {
+            this(x, y, color, radius, tooltip, onTap, null);
+        }
+
+        public DrawingPoint(float x, float y, int color, float radius,
+                            String tooltip, OnTapListener onTap, OnTapListener onLongTap) {
             this.x = x; this.y = y; this.color = color; this.radius = radius;
             this.tooltip = tooltip != null ? tooltip : "";
             this.onTap = onTap;
+            this.onLongTap = onLongTap;
         }
         public String toSvg() {
             String circle = String.format(
@@ -204,6 +212,12 @@ public class GeometryView extends View {
                     }
 
                     @Override
+                    public void onLongPress(MotionEvent e) {
+                        if (scaleDetector.isInProgress()) return;
+                        handleLongPress(e.getX(), e.getY());
+                    }
+
+                    @Override
                     public boolean onDoubleTap(MotionEvent e) {
                         resetView();
                         return true;
@@ -234,7 +248,13 @@ public class GeometryView extends View {
 
     public void addPoint(float x, float y, int color, float radius,
                          String tooltip, OnTapListener onTap) {
-        points.add(new DrawingPoint(x, y, color, radius, tooltip, onTap));
+        addPoint(x, y, color, radius, tooltip, onTap, null);
+    }
+
+    /** Punkt mit zusätzlichem Long-Press-Callback. */
+    public void addPoint(float x, float y, int color, float radius,
+                         String tooltip, OnTapListener onTap, OnTapListener onLongTap) {
+        points.add(new DrawingPoint(x, y, color, radius, tooltip, onTap, onLongTap));
         invalidate();
     }
 
@@ -391,6 +411,30 @@ public class GeometryView extends View {
         invalidate();
     }
 
+    /** Löst den Long-Press-Callback des nächstgelegenen Punkts aus, der einen hat. */
+    private void handleLongPress(float sx, float sy) {
+        float[] modelPt = {sx, sy};
+        invertMatrix.mapPoints(modelPt);
+        float mx = modelPt[0], my = modelPt[1];
+
+        float toleranceModel = tapTolerance / scaleFactor;
+        DrawingPoint hit = null;
+        float hitDist = Float.MAX_VALUE;
+
+        for (DrawingPoint p : points) {
+            if (p.onLongTap == null) continue;
+            float dist = (float) Math.hypot(p.x - mx, p.y - my);
+            if (dist <= p.radius + toleranceModel && dist < hitDist) {
+                hit = p;
+                hitDist = dist;
+            }
+        }
+        if (hit != null) {
+            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            hit.onLongTap.onTap();
+        }
+    }
+
     // ── Matrix ────────────────────────────────────────────────────────────────
 
     private void rebuildMatrix() {
@@ -405,7 +449,7 @@ public class GeometryView extends View {
 
         // Bounding Box über alle Objekte berechnen
         float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE;
-        float maxX = Float.MIN_VALUE, maxY = Float.MIN_VALUE;
+        float maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
 
         for (DrawingLine l : lines) {
             minX = Math.min(minX, Math.min(l.x1, l.x2));

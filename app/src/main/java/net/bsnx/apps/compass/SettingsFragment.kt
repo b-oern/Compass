@@ -20,12 +20,17 @@ package net.bsnx.apps.compass
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
+import android.text.method.DigitsKeyListener
+import android.widget.Toast
 import androidx.navigation.fragment.findNavController
+import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.PreferenceFragmentCompat
 import net.bsnx.apps.compass.db.CompassDB
 import net.bsnx.apps.compass.preference.PreferenceConstants
+import net.bsnx.apps.compass.preference.PreferenceStore
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
@@ -35,18 +40,50 @@ class SettingsFragment : PreferenceFragmentCompat() {
         findPreference<Preference>(PreferenceConstants.VERSION)?.summaryProvider =
             SummaryProvider<Preference> { BuildConfig.VERSION_NAME }
 
+        findPreference<EditTextPreference>(PreferenceConstants.STEP_LENGTH)?.apply {
+            summaryProvider = SummaryProvider<EditTextPreference> {
+                val length = PreferenceStore.parseStepLength(it.text) ?: PreferenceConstants.STEP_LENGTH_DEFAULT
+                "%.2f m".format(length)
+            }
+            setOnBindEditTextListener {
+                it.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                it.keyListener = DigitsKeyListener.getInstance("0123456789.,")
+            }
+            setOnPreferenceChangeListener { _, newValue ->
+                val valid = PreferenceStore.parseStepLength(newValue as? String) != null
+                if (!valid) {
+                    Toast.makeText(requireContext(), "Ungültige Schrittweite (0,1 – 3 m)", Toast.LENGTH_SHORT).show()
+                }
+                valid
+            }
+        }
+
         findPreference<Preference>(PreferenceConstants.THIRD_PARTY_LICENSES)?.setOnPreferenceClickListener {
             findNavController().navigate(R.id.action_SettingsFragment_to_ThirdPartyLicensesFragment)
             true
         }
 
         findPreference<Preference>("pref_path_list")?.setOnPreferenceClickListener {
-            val intent = Intent(requireContext(), ListActivity::class.java).apply {
-                putExtra(ListActivity.EXTRA_DAY_UNIX,
-                    CompassDB.dateToUnix(CompassDB.getTodayDate()))
-            }
+            val intent = Intent(requireContext(), DaysActivity::class.java)
+                //.apply {
+                //putExtra(ListActivity.EXTRA_DAY_UNIX,
+                //    CompassDB.dateToUnix(CompassDB.getTodayDate()))
+            //}
             startActivity(intent)
             true
         }
+        // TODO addPreference
+    }
+
+    fun addPreference(title: String, description: String, onClick: () -> Unit) {
+        val preference = Preference(requireContext()).apply {
+            this.title = title
+            summary = description
+            setOnPreferenceClickListener {
+                onClick()
+                true
+            }
+        }
+        preferenceScreen.addPreference(preference)
     }
 }

@@ -28,9 +28,21 @@
 
         <Preference
                 app:key="pref_path_list"
-                app:title="Heutige Einträge"
-                app:summary="Alle aufgezeichneten Schritte heute anzeigen"
+                app:title="[NX] Alle Einträge"
+                app:summary="Alle aufgezeichneten Schritte nach Tage anzeigen"
                 app:icon="@drawable/ic_compass" />
+
+        <EditTextPreference
+                app:key="step_length"
+                app:title="[NX] Schrittweite"
+                app:dialogMessage="Schrittweite in Metern"
+                app:defaultValue="0.9" />
+
+        <SwitchPreferenceCompat
+                app:key="gps_tracking"
+                app:title="[NX] GPS aufzeichnen"
+                app:summary="Bei jedem Eintrag die GPS-Position zum Vergleich mit der Schrittmessung mitspeichern"
+                app:defaultValue="false" />
 
         <SwitchPreferenceCompat
                 app:key="true_north"

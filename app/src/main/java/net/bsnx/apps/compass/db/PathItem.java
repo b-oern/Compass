@@ -19,8 +19,13 @@
 package net.bsnx.apps.compass.db;
 
 import java.util.Date;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class PathItem {
+
+    /** parentId-Wert für „setzt das zeitlich vorherige Item fort“ (IDs beginnen bei 1). */
+    public static final int NO_PARENT = 0;
 
     private final CompassDB owner;
     private final int       id;
@@ -29,6 +34,23 @@ public class PathItem {
     private final int       steps;
     /** Unix-Timestamp in Sekunden seit Epoch. */
     private final int       timestamp;
+    /** Luftdruck in hPa, {@link Float#NaN} wenn unbekannt. */
+    private final float     pressure;
+    /** Höhe in Metern über NN, {@link Float#NaN} wenn unbekannt. */
+    private final float     altitude;
+    /** GPS-Position beim Speichern, {@link Double#NaN} ohne GPS. */
+    private final double    latitude;
+    private final double    longitude;
+    /** GPS-Genauigkeit in Metern, {@link Float#NaN} wenn unbekannt. */
+    private final float     gpsAccuracy;
+    /** ID des Items, von dessen Endpunkt aus fortgesetzt wird, oder {@link #NO_PARENT}. */
+    private final int       parentId;
+
+    /**
+     * Item, an dessen Endpunkt dieses Item beginnt; {@code null} = Startpunkt (0, 0).
+     * Transient: wird von {@link PathList#computeCoordinates()} befüllt.
+     */
+    private PathItem previous;
 
     /**
      * Berechnete X-Koordinate (Ost+/West−) relativ zum Startpunkt.
@@ -46,15 +68,55 @@ public class PathItem {
 
     // ── Konstruktor (package-private: nur CompassDB darf Instanzen erzeugen) ──
 
-    PathItem(CompassDB owner, int id, int heading, int steps, int timestamp) {
-        this.owner     = owner;
-        this.id        = id;
-        this.heading   = heading;
-        this.steps     = steps;
-        this.timestamp = timestamp;
+    PathItem(CompassDB owner, int id, int heading, int steps, int timestamp,
+             float pressure, float altitude,
+             double latitude, double longitude, float gpsAccuracy, int parentId) {
+        this.parentId    = parentId;
+        this.owner       = owner;
+        this.id          = id;
+        this.heading     = heading;
+        this.steps       = steps;
+        this.timestamp   = timestamp;
+        this.pressure    = pressure;
+        this.altitude    = altitude;
+        this.latitude    = latitude;
+        this.longitude   = longitude;
+        this.gpsAccuracy = gpsAccuracy;
     }
 
     // ── Getter ────────────────────────────────────────────────────────────────
+
+    public int       getParentId()  { return parentId;  }
+    /** Vorgänger im Pfad (Startpunkt dieses Segments), {@code null} = Ursprung. */
+    public PathItem  getPrevious()  { return previous;  }
+    public float     getStartX()    { return previous == null ? 0f : previous.x; }
+    public float     getStartY()    { return previous == null ? 0f : previous.y; }
+
+    public float     getPressure()  { return pressure;  }
+    public float     getAltitude()  { return altitude;  }
+    public boolean   hasAltitude()  { return !Float.isNaN(altitude); }
+
+    public double    getLatitude()    { return latitude;    }
+    public double    getLongitude()   { return longitude;   }
+    public float     getGpsAccuracy() { return gpsAccuracy; }
+    public boolean   hasGps()         { return !Double.isNaN(latitude) && !Double.isNaN(longitude); }
+
+    /**
+     * GPS-Position dieses Items relativ zur GPS-Position von {@code origin} in Metern,
+     * als {x (Ost+), y (Nord+)} — gleiches Koordinatensystem wie {@link #getX()}/{@link #getY()}.
+     * Lokale Näherung (equirektangulär), für Strecken bis einige km ausreichend genau.
+     * Beide Items müssen {@link #hasGps()} erfüllen.
+     */
+    public float[] gpsToLocalMeters(PathItem origin) {
+        final double earthRadiusM = 6371000.0;
+        double lat0 = Math.toRadians(origin.latitude);
+        double dLat = Math.toRadians(latitude  - origin.latitude);
+        double dLon = Math.toRadians(longitude - origin.longitude);
+        return new float[]{
+                (float) (earthRadiusM * dLon * Math.cos(lat0)),
+                (float) (earthRadiusM * dLat)
+        };
+    }
 
     public CompassDB getOwner()     { return owner;     }
     public int       getId()        { return id;        }
@@ -68,6 +130,12 @@ public class PathItem {
 
     void setX(float x) { this.x = x; }
     void setY(float y) { this.y = y; }
+    void setPrevious(PathItem previous) { this.previous = previous; }
+
+    /** ID des tatsächlichen Vorgängers (Startpunkt), 0 = Ursprung. */
+    private int previousId() {
+        return previous == null ? 0 : previous.id;
+    }
 
     // ── Hilfsmethoden ─────────────────────────────────────────────────────────
 
@@ -93,7 +161,56 @@ public class PathItem {
                 ", steps=" + steps +
                 ", x=" + x + ", y=" + y +
                 ", timestamp=" + timestamp +
+                ", pressure=" + pressure +
+                ", altitude=" + altitude +
                 "}";
+    }
+
+    /**
+     * Spalten: heading,steps,x,y,timestamp,id,pressure,altitude,latitude,longitude,gps_accuracy,previous_id
+     * (leer, wenn unbekannt; previous_id = Item, an dessen Endpunkt dieses beginnt, 0 = Ursprung)
+     * @return
+     */
+    public String toCsvLine() {
+        return "" + heading + ";" +
+                steps + ";" +
+                x + ";" + y + ";" +
+                timestamp + ";" +
+                id + ";" +
+                (Float.isNaN(pressure) ? "" : pressure) + ";" +
+                (Float.isNaN(altitude) ? "" : altitude) + ";" +
+                (Double.isNaN(latitude)  ? "" : latitude)  + ";" +
+                (Double.isNaN(longitude) ? "" : longitude) + ";" +
+                (Float.isNaN(gpsAccuracy) ? "" : gpsAccuracy) + ";" +
+                previousId() + ";";
+    }
+
+    public JSONObject toJson() {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("heading", heading);
+            json.put("steps", steps);
+            json.put("x", x);
+            json.put("y", y);
+            json.put("timestamp", timestamp);
+            json.put("id", id);
+            json.put("previous_id", previousId());
+            // JSON kennt kein NaN → unbekannte Werte weglassen
+            if (!Float.isNaN(pressure)) json.put("pressure", pressure);
+            if (!Float.isNaN(altitude)) json.put("altitude", altitude);
+            if (hasGps()) {
+                json.put("latitude", latitude);
+                json.put("longitude", longitude);
+                if (!Float.isNaN(gpsAccuracy)) json.put("gps_accuracy", gpsAccuracy);
+            }
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+        return json;
+    }
+
+    public String toJsonString() {
+        return toJson().toString();
     }
 
 }

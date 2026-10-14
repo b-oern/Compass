@@ -18,6 +18,7 @@ import android.widget.Toast;
 import net.bsnx.apps.compass.db.CompassDB;
 import net.bsnx.apps.compass.db.PathItem;
 import net.bsnx.apps.compass.db.PathList;
+import net.bsnx.apps.compass.preference.PreferenceStore;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ import java.util.Locale;
  */
 public class ListActivity extends Activity {
 
-    public static final String EXTRA_DAY_UNIX = "day_unix";
+    public static final String EXTRA_DAY_UNIX = "date";
 
     private CompassDB       db;
     private PathItemAdapter adapter;
@@ -55,11 +56,11 @@ public class ListActivity extends Activity {
 
         PathList items;
         if (getIntent().hasExtra(EXTRA_DAY_UNIX)) {
-            int dayUnix = getIntent().getIntExtra(
+            long dayUnix = getIntent().getLongExtra(
                     EXTRA_DAY_UNIX,
                     CompassDB.dateToUnix(CompassDB.getTodayDate()));
 
-            items = db.getByDay(CompassDB.unixToDate(dayUnix));
+            items = db.getByDay(CompassDB.unixToDate((int) dayUnix));
         } else {
             items = db.getAll();
         }
@@ -90,7 +91,12 @@ public class ListActivity extends Activity {
                 .setTitle("Eintrag löschen")
                 .setMessage(item.getSteps() + " Schritte · " +
                         item.getHeading() + "° (" + item.getCardinalDirection() + ")" +
-                        " · " + time  + "X: " + item.getX() + " Y: " + item.getY())
+                        " · " + time +
+                        String.format(Locale.getDefault(), " · X %.1f m, Y %.1f m", item.getX(), item.getY()) +
+                        (item.hasAltitude()
+                                ? String.format(Locale.getDefault(), " · %.1f m (%.1f hPa)",
+                                        item.getAltitude(), item.getPressure())
+                                : ""))
                 .setPositiveButton("Löschen", (dialog, which) -> deleteItem(item))
                 .setNegativeButton("Abbrechen", null)
                 .show();
@@ -110,6 +116,7 @@ public class ListActivity extends Activity {
 
         private final SimpleDateFormat timeFmt =
                 new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+        private final float stepLength = PreferenceStore.readStepLength(ListActivity.this);
 
         PathItemAdapter(Context ctx, List<PathItem> items) {
             super(ctx, 0, items);
@@ -129,7 +136,11 @@ public class ListActivity extends Activity {
             PathItem item = getItem(position);
             if (item == null) return convertView;
 
-            holder.tvSteps.setText(item.getSteps() + " Schritte");
+            holder.tvSteps.setText(item.getSteps() + " Schritte" +
+                    String.format(Locale.getDefault(), " (%.0f m)", item.getSteps() * stepLength) +
+                    (item.hasAltitude()
+                            ? String.format(Locale.getDefault(), "\n%.0f m", item.getAltitude())
+                            : ""));
             holder.tvHeading.setText(item.getHeading() + "°  " + item.getCardinalDirection());
             holder.tvTime.setText(timeFmt.format(CompassDB.unixToDate(item.getTimestamp())));
 

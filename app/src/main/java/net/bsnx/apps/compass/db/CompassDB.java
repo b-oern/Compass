@@ -24,6 +24,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import net.bsnx.apps.compass.preference.PreferenceStore;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -34,25 +36,41 @@ public class CompassDB {
     // ── Schema ────────────────────────────────────────────────────────────────
 
     private static final String DB_NAME    = "compass.db";
-    private static final int    DB_VERSION = 1;
+    private static final int    DB_VERSION = 5;
 
     private static final String TABLE      = "path_items";
     private static final String COL_ID        = "id";
     private static final String COL_HEADING   = "heading";
     private static final String COL_STEPS     = "steps";
     private static final String COL_TIMESTAMP = "timestamp";
+    /** Luftdruck in hPa, NULL ohne Barometer (seit DB-Version 2). */
+    private static final String COL_PRESSURE  = "pressure";
+    /** Höhe in Metern über NN, NULL ohne Barometer (seit DB-Version 2). */
+    private static final String COL_ALTITUDE  = "altitude";
+    /** GPS-Position beim Speichern, NULL wenn GPS aus/kein Fix (seit DB-Version 4). */
+    private static final String COL_LAT          = "latitude";
+    private static final String COL_LON          = "longitude";
+    /** GPS-Genauigkeit in Metern (seit DB-Version 4). */
+    private static final String COL_GPS_ACCURACY = "gps_accuracy";
+    /**
+     * ID des Items, von dessen Endpunkt dieses Item ausgeht (seit DB-Version 5).
+     * NULL = setzt das zeitlich vorherige Item fort.
+     */
+    private static final String COL_PARENT_ID    = "parent_id";
 
     private static final String SQL_CREATE =
             "CREATE TABLE " + TABLE + " (" +
                     COL_ID        + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     COL_HEADING   + " INTEGER NOT NULL, " +
                     COL_STEPS     + " INTEGER NOT NULL, " +
-                    COL_TIMESTAMP + " INTEGER NOT NULL" +
+                    COL_TIMESTAMP + " INTEGER NOT NULL, " +
+                    COL_PRESSURE  + " REAL, " +
+                    COL_ALTITUDE  + " REAL, " +
+                    COL_LAT       + " REAL, " +
+                    COL_LON       + " REAL, " +
+                    COL_GPS_ACCURACY + " REAL, " +
+                    COL_PARENT_ID + " INTEGER" +
                     ")";
-
-
-
-    // ── Inner SQLiteOpenHelper ────────────────────────────────────────────────
 
     private static final class DbHelper extends SQLiteOpenHelper {
 
@@ -67,8 +85,21 @@ public class CompassDB {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE);
-            onCreate(db);
+            // Bestehende Pfade erhalten: Spalten ergänzen statt Tabelle neu anlegen.
+            if (oldVersion < 2) {
+                db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN " + COL_PRESSURE + " REAL");
+                db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN " + COL_ALTITUDE + " REAL");
+            }
+            if (oldVersion < 4) {
+                // Version 3 (nur Entwicklungsstand) hatte eine separate GPS-Tabelle
+                db.execSQL("DROP TABLE IF EXISTS gps_points");
+                db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN " + COL_LAT + " REAL");
+                db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN " + COL_LON + " REAL");
+                db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN " + COL_GPS_ACCURACY + " REAL");
+            }
+            if (oldVersion < 5) {
+                db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN " + COL_PARENT_ID + " INTEGER");
+            }
         }
     }
 
@@ -76,12 +107,15 @@ public class CompassDB {
 
     private final DbHelper       helper;
     private final SQLiteDatabase db;
+    /** Schrittweite in Metern aus den Einstellungen, für die Koordinatenberechnung. */
+    private final float          stepLength;
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
     public CompassDB(Context ctx) {
-        helper = new DbHelper(ctx.getApplicationContext());
-        db     = helper.getWritableDatabase();
+        helper     = new DbHelper(ctx.getApplicationContext());
+        db         = helper.getWritableDatabase();
+        stepLength = PreferenceStore.readStepLength(ctx);
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -94,17 +128,43 @@ public class CompassDB {
      * @return the newly created PathItem, or {@code null} on failure
      */
     public PathItem create(int heading, int steps) {
+        return create(heading, steps, Float.NaN, Float.NaN, Double.NaN, Double.NaN, Float.NaN,
+                PathItem.NO_PARENT);
+    }
+
+    /**
+     * Wie {@link #create(int, int)}, zusätzlich mit Luftdruck, Höhe, GPS-Position
+     * und Ausgangspunkt. Unbekannte Werte als NaN übergeben; sie werden als NULL gespeichert.
+     *
+     * @param pressure    Luftdruck in hPa
+     * @param altitude    Höhe in Metern über NN
+     * @param latitude    GPS-Breitengrad
+     * @param longitude   GPS-Längengrad
+     * @param gpsAccuracy GPS-Genauigkeit in Metern
+     * @param parentId    ID des Items, von dem aus fortgesetzt wird,
+     *                    oder {@link PathItem#NO_PARENT} für das zeitlich vorherige
+     */
+    public PathItem create(int heading, int steps, float pressure, float altitude,
+                           double latitude, double longitude, float gpsAccuracy,
+                           int parentId) {
         int now = (int) (System.currentTimeMillis() / 1000L);
 
         ContentValues cv = new ContentValues();
         cv.put(COL_HEADING,   heading);
         cv.put(COL_STEPS,     steps);
         cv.put(COL_TIMESTAMP, now);
+        if (Float.isNaN(pressure)) cv.putNull(COL_PRESSURE); else cv.put(COL_PRESSURE, pressure);
+        if (Float.isNaN(altitude)) cv.putNull(COL_ALTITUDE); else cv.put(COL_ALTITUDE, altitude);
+        if (Double.isNaN(latitude))  cv.putNull(COL_LAT); else cv.put(COL_LAT, latitude);
+        if (Double.isNaN(longitude)) cv.putNull(COL_LON); else cv.put(COL_LON, longitude);
+        if (Float.isNaN(gpsAccuracy)) cv.putNull(COL_GPS_ACCURACY); else cv.put(COL_GPS_ACCURACY, gpsAccuracy);
+        if (parentId == PathItem.NO_PARENT) cv.putNull(COL_PARENT_ID); else cv.put(COL_PARENT_ID, parentId);
 
         long rowId = db.insert(TABLE, null, cv);
         if (rowId == -1) return null;
 
-        return new PathItem(this, (int) rowId, heading, steps, now);
+        return new PathItem(this, (int) rowId, heading, steps, now, pressure, altitude,
+                latitude, longitude, gpsAccuracy, parentId);
     }
 
     /**
@@ -120,22 +180,11 @@ public class CompassDB {
                 COL_TIMESTAMP + " >= ? AND " + COL_TIMESTAMP + " < ?",
                 new String[]{ String.valueOf(bounds[0]), String.valueOf(bounds[1]) },
                 null, null,
-                COL_TIMESTAMP + " ASC"
+                COL_TIMESTAMP + " ASC, " + COL_ID + " ASC"
         );
 
         List<PathItem> result = new ArrayList<>();
-        try {
-            int idxId   = cursor.getColumnIndexOrThrow(COL_ID);
-            int idxHead = cursor.getColumnIndexOrThrow(COL_HEADING);
-            int idxStep = cursor.getColumnIndexOrThrow(COL_STEPS);
-            int idxTs   = cursor.getColumnIndexOrThrow(COL_TIMESTAMP);
-
-            while (cursor.moveToNext()) {
-                result.add(new PathItem(this, cursor.getInt(idxId), cursor.getInt(idxHead),cursor.getInt(idxStep),cursor.getInt(idxTs)));
-            }
-        } finally {
-            cursor.close();
-        }
+        readItems(cursor, result);
         return result;
     }
 
@@ -146,22 +195,11 @@ public class CompassDB {
                 "",
                 new String[]{},
                 null, null,
-                COL_TIMESTAMP + " ASC"
+                COL_TIMESTAMP + " ASC, " + COL_ID + " ASC"
         );
         PathList result = new PathList();
-        try {
-            int idxId   = cursor.getColumnIndexOrThrow(COL_ID);
-            int idxHead = cursor.getColumnIndexOrThrow(COL_HEADING);
-            int idxStep = cursor.getColumnIndexOrThrow(COL_STEPS);
-            int idxTs   = cursor.getColumnIndexOrThrow(COL_TIMESTAMP);
-
-            while (cursor.moveToNext()) {
-                result.add(new PathItem(this, cursor.getInt(idxId), cursor.getInt(idxHead),cursor.getInt(idxStep),cursor.getInt(idxTs)));
-            }
-        } finally {
-            cursor.close();
-        }
-        result.computeCoordinates();
+        readItems(cursor, result);
+        result.computeCoordinates(stepLength);
         return result;
     }
 
@@ -171,25 +209,32 @@ public class CompassDB {
      * (00:00:00) des jeweiligen Tages normiert.
      */
     public List<Date> getDays() {
-        // Distinct-Tage per SQL: Timestamp auf Tagesbeginn runden.
-        // SQLite: ganzzahlige Division durch 86400 liefert den "Tag-Index".
+        // Tagesbeginn in lokaler Zeitzone bestimmen (wie getByDay), nicht in UTC.
         Cursor cursor = db.rawQuery(
-                "SELECT DISTINCT (" + COL_TIMESTAMP + " / 86400) * 86400 AS day_start" +
+                "SELECT " + COL_TIMESTAMP +
                         " FROM " + TABLE +
-                        " ORDER BY day_start ASC",
+                        " ORDER BY " + COL_TIMESTAMP + " ASC",
                 null
         );
 
         List<Date> days = new ArrayList<>();
         try {
+            long lastDayStart = Long.MIN_VALUE;
             while (cursor.moveToNext()) {
-                long epochSeconds = cursor.getLong(0);
-                days.add(new Date(epochSeconds * 1000L));
+                long dayStart = dayBounds(unixToDate(cursor.getInt(0)))[0];
+                if (dayStart != lastDayStart) {
+                    days.add(new Date(dayStart * 1000L));
+                    lastDayStart = dayStart;
+                }
             }
         } finally {
             cursor.close();
         }
         return days;
+    }
+
+    public PathList getByDay(int ts) {
+        return getByDay(new Date(1000L*ts));
     }
 
     /**
@@ -207,29 +252,12 @@ public class CompassDB {
                 COL_TIMESTAMP + " >= ? AND " + COL_TIMESTAMP + " < ?",
                 new String[]{ String.valueOf(bounds[0]), String.valueOf(bounds[1]) },
                 null, null,
-                COL_TIMESTAMP + " ASC"
+                COL_TIMESTAMP + " ASC, " + COL_ID + " ASC"
         );
 
         PathList result = new PathList();
-        try {
-            int idxId   = cursor.getColumnIndexOrThrow(COL_ID);
-            int idxHead = cursor.getColumnIndexOrThrow(COL_HEADING);
-            int idxStep = cursor.getColumnIndexOrThrow(COL_STEPS);
-            int idxTs   = cursor.getColumnIndexOrThrow(COL_TIMESTAMP);
-
-            while (cursor.moveToNext()) {
-                result.add(new PathItem(
-                        this,
-                        cursor.getInt(idxId),
-                        cursor.getInt(idxHead),
-                        cursor.getInt(idxStep),
-                        cursor.getInt(idxTs)
-                ));
-            }
-        } finally {
-            cursor.close();
-        }
-        result.computeCoordinates();
+        readItems(cursor, result);
+        result.computeCoordinates(stepLength);
         return result;
     }
 
@@ -239,6 +267,40 @@ public class CompassDB {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /** Liest alle Zeilen des Cursors als PathItems in {@code out} und schließt ihn. */
+    private void readItems(Cursor cursor, List<PathItem> out) {
+        try {
+            int idxId   = cursor.getColumnIndexOrThrow(COL_ID);
+            int idxHead = cursor.getColumnIndexOrThrow(COL_HEADING);
+            int idxStep = cursor.getColumnIndexOrThrow(COL_STEPS);
+            int idxTs   = cursor.getColumnIndexOrThrow(COL_TIMESTAMP);
+            int idxPres = cursor.getColumnIndexOrThrow(COL_PRESSURE);
+            int idxAlt  = cursor.getColumnIndexOrThrow(COL_ALTITUDE);
+            int idxLat  = cursor.getColumnIndexOrThrow(COL_LAT);
+            int idxLon  = cursor.getColumnIndexOrThrow(COL_LON);
+            int idxAcc  = cursor.getColumnIndexOrThrow(COL_GPS_ACCURACY);
+            int idxPar  = cursor.getColumnIndexOrThrow(COL_PARENT_ID);
+
+            while (cursor.moveToNext()) {
+                out.add(new PathItem(
+                        this,
+                        cursor.getInt(idxId),
+                        cursor.getInt(idxHead),
+                        cursor.getInt(idxStep),
+                        cursor.getInt(idxTs),
+                        cursor.isNull(idxPres) ? Float.NaN  : cursor.getFloat(idxPres),
+                        cursor.isNull(idxAlt)  ? Float.NaN  : cursor.getFloat(idxAlt),
+                        cursor.isNull(idxLat)  ? Double.NaN : cursor.getDouble(idxLat),
+                        cursor.isNull(idxLon)  ? Double.NaN : cursor.getDouble(idxLon),
+                        cursor.isNull(idxAcc)  ? Float.NaN  : cursor.getFloat(idxAcc),
+                        cursor.isNull(idxPar)  ? PathItem.NO_PARENT : cursor.getInt(idxPar)
+                ));
+            }
+        } finally {
+            cursor.close();
+        }
+    }
 
     /** Returns [startOfDayUnix, startOfTomorrowUnix] as seconds for today. */
     private static long[] todayBounds() {
@@ -267,6 +329,11 @@ public class CompassDB {
 
     public static int getTodayDateTS() {
         return CompassDB.dateToUnix(new Date(dayBounds(new Date())[0] * 1000L));
+    }
+
+    /** true, wenn der Unix-Timestamp (Sekunden) auf den heutigen Tag (lokale Zeit) fällt. */
+    public static boolean isToday(int timestamp) {
+        return dayBounds(unixToDate(timestamp))[0] == todayBounds()[0];
     }
 
     public static int dateToUnix(Date date) {

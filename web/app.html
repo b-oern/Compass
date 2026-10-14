@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kompass Pfad</title>
+<meta name="description" content="Koppelnavigation mit Kompass und Schritten – Pfade aufzeichnen und als Karte anzeigen.">
+<meta name="theme-color" content="#c62828">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  :root {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --text: #1c1b1f;
+    --muted: #6b6b70;
+    --border: #e2e2e6;
+    --accent: #c62828;
+    --accent-text: #ffffff;
+    --track-low: #f57c00;   /* orange: Beginn des Tages */
+    --track-high: #c62828;  /* rot: Ende des Tages */
+    --active-ring: #1c1b1f;
+    --danger: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121214;
+      --surface: #1d1d21;
+      --text: #ececf0;
+      --muted: #9a9aa2;
+      --border: #2e2e34;
+      --accent: #ef5350;
+      --accent-text: #121214;
+      --track-low: #ffa040;
+      --track-high: #ef5350;
+      --active-ring: #ececf0;
+      --danger: #f2b8b5;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: calc(8px + env(safe-area-inset-top)) 16px 8px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    min-height: 52px;
+  }
+  header h1 { font-size: 18px; margin: 0; flex: 1; font-weight: 600; }
+  main { flex: 1; position: relative; overflow: hidden; }
+  .view { position: absolute; inset: 0; display: none; overflow: auto; }
+  .view.active { display: flex; flex-direction: column; }
+  nav {
+    display: flex;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav button {
+    flex: 1;
+    background: none;
+    border: 0;
+    color: var(--muted);
+    padding: 10px 4px 12px;
+    font: inherit;
+    font-size: 13px;
+  }
+  nav button.active { color: var(--accent); font-weight: 600; }
+  button.btn {
+    font: inherit;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 10px 18px;
+    min-height: 44px;
+  }
+  button.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button.icon {
+    background: none; border: 0; color: var(--text);
+    font-size: 22px; width: 44px; height: 44px; border-radius: 50%;
+  }
+
+  /* Kompass */
+  #view-compass { align-items: center; justify-content: center; gap: 16px; padding: 16px; }
+  #rose { width: min(72vw, 320px); height: min(72vw, 320px); }
+  #rose-dial { transition: transform 0.15s linear; transform-origin: 50% 50%; }
+  .heading { font-size: 44px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .heading small { font-size: 22px; color: var(--muted); margin-left: 8px; }
+  .steps-row { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .steps-row input {
+    width: 96px; font: inherit; font-size: 22px; text-align: center;
+    padding: 6px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text);
+  }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .hint { color: var(--muted); font-size: 14px; text-align: center; max-width: 360px; }
+  #manual-heading { display: none; }
+
+  /* Karte */
+  #view-map { overflow: hidden; }
+  #map { flex: 1; width: 100%; touch-action: none; display: block; }
+  .map-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px 6px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .map-bar .title { flex: 1; font-weight: 600; }
+  .legend {
+    padding: 8px 16px; background: var(--surface); border-top: 1px solid var(--border);
+    font-size: 13px; color: var(--muted);
+  }
+  .legend .bar {
+    display: inline-block; width: 64px; height: 8px; border-radius: 4px; vertical-align: middle;
+    background: linear-gradient(to right, var(--track-low), var(--track-high)); margin: 0 6px;
+  }
+  .menu {
+    position: absolute; right: 8px; top: 52px; z-index: 5;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.2); display: none; min-width: 180px;
+  }
+  .menu.open { display: block; }
+  .menu button {
+    display: block; width: 100%; text-align: left; background: none; border: 0;
+    color: var(--text); font: inherit; padding: 12px 16px;
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom));
+    transform: translateX(-50%); background: var(--text); color: var(--bg);
+    padding: 10px 16px; border-radius: 8px; font-size: 14px; max-width: calc(100% - 32px);
+    opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Listen */
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  ul.list li .main { flex: 1; min-width: 0; }
+  ul.list li .sub { color: var(--muted); font-size: 13px; }
+  ul.list li.active-item .main::before { content: "● "; color: var(--accent); }
+  .empty { padding: 32px 16px; color: var(--muted); text-align: center; }
+
+  /* Einstellungen */
+  .settings { padding: 8px 0; }
+  .setting { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .setting label { flex: 1; }
+  .setting .sub { display: block; color: var(--muted); font-size: 13px; }
+  .setting input[type=number], .setting select {
+    font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text); width: 110px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Kompass</h1>
+</header>
+
+<main>
+  <!-- Kompass -->
+  <section class="view active" id="view-compass">
+    <svg id="rose" viewBox="-110 -110 220 220" aria-label="Kompassrose">
+      <g id="rose-dial">
+        <circle r="100" fill="none" stroke="var(--border)" stroke-width="2"/>
+        <g id="ticks"></g>
+        <text y="-72" text-anchor="middle" font-size="18" font-weight="700" fill="var(--accent)">N</text>
+        <text x="74" y="6" text-anchor="middle" font-size="16" fill="var(--text)">O</text>
+        <text y="84" text-anchor="middle" font-size="16" fill="var(--text)">S</text>
+        <text x="-74" y="6" text-anchor="middle" font-size="16" fill="var(--text)">W</text>
+      </g>
+      <path d="M0,-96 L7,-80 L-7,-80 Z" fill="var(--accent)"/>
+      <circle r="3" fill="var(--text)"/>
+    </svg>
+    <div class="heading"><span id="heading-deg">–</span>°<small id="heading-card"></small></div>
+    <div id="manual-heading" class="steps-row">
+      Kurs <input id="heading-input" type="number" min="0" max="359" inputmode="numeric" value="0"> °
+    </div>
+    <div class="steps-row">
+      Schritte <input id="steps-input" type="number" min="0" inputmode="numeric" value="0">
+      <span id="steps-m"></span>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btn-start">Sensoren starten</button>
+      <button class="btn" id="btn-reset">Reset</button>
+      <button class="btn primary" id="btn-add">Add</button>
+    </div>
+    <p class="hint" id="sensor-hint">Zum Messen „Sensoren starten“ tippen. Die Schritte werden nur gezählt, solange die App offen ist.</p>
+  </section>
+
+  <!-- Karte -->
+  <section class="view" id="view-map">
+    <div class="map-bar">
+      <span class="title" id="map-title"></span>
+      <button class="icon" id="btn-map-menu" aria-label="Menü">⋮</button>
+    </div>
+    <div class="menu" id="map-menu">
+      <button data-action="list">Listenansicht</button>
+      <button data-action="fit">Ganzen Pfad zeigen</button>
+    </div>
+    <canvas id="map"></canvas>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <!-- Liste eines Tages -->
+  <section class="view" id="view-list">
+    <ul class="list" id="item-list"></ul>
+  </section>
+
+  <!-- Tage -->
+  <section class="view" id="view-days">
+    <ul class="list" id="day-list"></ul>
+  </section>
+
+  <!-- Einstellungen -->
+  <section class="view" id="view-settings">
+    <div class="settings">
+      <div class="setting">
+        <label for="set-step">Schrittweite<span class="sub">in Metern</span></label>
+        <input id="set-step" type="number" min="0.1" max="3" step="0.01" inputmode="decimal">
+      </div>
+      <div class="setting">
+        <label for="set-sens">Empfindlichkeit<span class="sub">der Schritterkennung</span></label>
+        <select id="set-sens">
+          <option value="low">niedrig</option>
+          <option value="mid">mittel</option>
+          <option value="high">hoch</option>
+        </select>
+      </div>
+      <div class="setting">
+        <label for="set-wake">Bildschirm anlassen<span class="sub">nötig, damit Schritte gezählt werden</span></label>
+        <input id="set-wake" type="checkbox">
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button data-view="compass" class="active">Kompass</button>
+  <button data-view="map">Karte</button>
+  <button data-view="days">Tage</button>
+  <button data-view="settings">Einstellungen</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// ── Einstellungen (localStorage, per Gerät) ─────────────────────────────────
+const settings = {
+  get stepLength() {
+    const v = parseFloat(readLS('stepLength'));
+    return v >= 0.1 && v <= 3 ? v : 0.9;
+  },
+  set stepLength(v) { writeLS('stepLength', String(v)); },
+  get sensitivity() { return readLS('sensitivity') || 'mid'; },
+  set sensitivity(v) { writeLS('sensitivity', v); },
+  get wakeLock() { return readLS('wakeLock') !== '0'; },
+  set wakeLock(v) { writeLS('wakeLock', v ? '1' : '0'); },
+  get activeId() { return parseInt(readLS('activeId') || '0', 10); },
+  set activeId(v) { writeLS('activeId', String(v)); },
+};
+function readLS(key) { try { return localStorage.getItem('kp.' + key); } catch (e) { return null; } }
+function writeLS(key, v) { try { localStorage.setItem('kp.' + key, v); } catch (e) { /* privater Modus */ } }
+
+// ── Datenbank (IndexedDB) ───────────────────────────────────────────────────
+// Eintrag: { id, heading (°), steps, timestamp (Unix-Sekunden), parentId (0 = vorheriger) }
+const DB_NAME = 'kompass-pfad';
+let db = null;
+let items = [];   // alle Einträge, aufsteigend nach Zeit
+
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const store = req.result.createObjectStore('items', { keyPath: 'id', autoIncrement: true });
+      store.createIndex('timestamp', 'timestamp');
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function tx(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const t = db.transaction('items', mode);
+    const result = fn(t.objectStore('items'));
+    t.oncomplete = () => resolve(result && 'result' in result ? result.result : undefined);
+    t.onerror = () => reject(t.error);
+  });
+}
+async function loadItems() {
+  items = await tx('readonly', s => s.getAll());
+  items.sort((a, b) => a.timestamp - b.timestamp || a.id - b.id);
+}
+async function addItem(item) {
+  const id = await tx('readwrite', s => s.add(item));
+  await loadItems();
+  return id;
+}
+async function deleteItem(id) {
+  await tx('readwrite', s => s.delete(id));
+  await loadItems();
+}
+
+// ── Datum / Tage (lokale Zeit) ──────────────────────────────────────────────
+function dayKey(ts) {
+  const d = new Date(ts * 1000);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+const todayKey = () => dayKey(Date.now() / 1000);
+function dayTitle(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+}
+const itemsOfDay = key => items.filter(i => dayKey(i.timestamp) === key);
+const timeOf = ts => new Date(ts * 1000).toLocaleTimeString('de-DE');
+
+// ── Pfadberechnung ──────────────────────────────────────────────────────────
+// Jeder Eintrag beginnt am Endpunkt seines Vorgängers: parentId, falls am selben
+// Tag vorhanden und früher, sonst der zeitlich vorherige Eintrag (erster: Ursprung).
+// x = Ost, y = Nord, in Metern.
+function computePath(dayItems, stepLength) {
+  const byId = new Map();
+  let last = null;
+  return dayItems.map(item => {
+    const prev = byId.get(item.parentId) || last;
+    const rad = item.heading * Math.PI / 180;
+    const dist = item.steps * stepLength;
+    const sx = prev ? prev.x : 0, sy = prev ? prev.y : 0;
+    const node = { item, prev, sx, sy, x: sx + dist * Math.sin(rad), y: sy + dist * Math.cos(rad) };
+    byId.set(item.id, node);
+    last = node;
+    return node;
+  });
+}
+
+const CARDINALS = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'];
+const cardinal = deg => CARDINALS[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
+
+// ── Kompass ─────────────────────────────────────────────────────────────────
+let heading = null;          // geglätteter Kurs in Grad, null = kein Sensor
+let hSin = 0, hCos = 1;      // Glättung über Einheitsvektor (wegen 359° → 0°)
+
+function screenAngle() {
+  if (screen.orientation && typeof screen.orientation.angle === 'number') return screen.orientation.angle;
+  return typeof window.orientation === 'number' ? window.orientation : 0;
+}
+function onHeading(raw) {
+  const rad = raw * Math.PI / 180;
+  const a = heading === null ? 1 : 0.2;
+  hSin += a * (Math.sin(rad) - hSin);
+  hCos += a * (Math.cos(rad) - hCos);
+  heading = (Math.atan2(hSin, hCos) * 180 / Math.PI + 360) % 360;
+  renderHeading();
+}
+function onOrientationAbsolute(e) {
+  if (e.alpha == null) return;
+  onHeading((360 - e.alpha + screenAngle()) % 360);
+}
+// iOS (webkitCompassHeading) bzw. Browser ohne deviceorientationabsolute (absolute=true)
+function onOrientationFallback(e) {
+  if (typeof e.webkitCompassHeading === 'number') {
+    onHeading((e.webkitCompassHeading + screenAngle()) % 360);
+  } else if (e.absolute && e.alpha != null) {
+    onOrientationAbsolute(e);
+  }
+}
+
+const roseDial = document.getElementById('rose-dial');
+let roseRotation = 0;   // kumuliert, damit die Animation nicht über 360° springt
+function renderHeading() {
+  const deg = Math.round(heading) % 360;
+  document.getElementById('heading-deg').textContent = deg;
+  document.getElementById('heading-card').textContent = cardinal(deg);
+  const target = -heading;
+  const delta = ((target - roseRotation) % 360 + 540) % 360 - 180;
+  roseRotation += delta;
+  roseDial.style.transform = `rotate(${roseRotation}deg)`;
+}
+
+(function drawTicks() {
+  const g = document.getElementById('ticks');
+  let s = '';
+  for (let d = 0; d < 360; d += 10) {
+    const long = d % 30 === 0;
+    const r1 = long ? 88 : 93, rad = d * Math.PI / 180;
+    s += `<line x1="${Math.sin(rad) * r1}" y1="${-Math.cos(rad) * r1}" x2="${Math.sin(rad) * 99}" y2="${-Math.cos(rad) * 99}"
+      stroke="var(--muted)" stroke-width="${long ? 2 : 1}"/>`;
+  }
+  g.innerHTML = s;
+})();
+
+// ── Schritterkennung (Beschleunigungssensor) ────────────────────────────────
+// Kein Zugriff auf den System-Schrittzähler im Browser: Schritte werden aus den
+// Spitzen der Beschleunigung erkannt (geglättet, mit Hysterese und Mindestabstand).
+const THRESHOLDS = { low: 1.6, mid: 1.1, high: 0.7 };   // m/s² über dem Mittelwert
+const MIN_STEP_MS = 300;
+let stepTotal = 0, stepBase = 0;
+let accFast = null, accSlow = null, above = false, lastStepAt = 0;
+let stepsEdited = false;   // Nutzer hat die Schrittzahl von Hand geändert
+
+function onMotion(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a || a.x == null) return;
+  const m = Math.hypot(a.x, a.y, a.z);
+  if (accFast === null) { accFast = accSlow = m; return; }
+  accFast += 0.3 * (m - accFast);
+  accSlow += 0.02 * (m - accSlow);
+  const d = accFast - accSlow;
+  const thr = THRESHOLDS[settings.sensitivity] || THRESHOLDS.mid;
+  if (!above && d > thr) {
+    above = true;
+    const now = performance.now();
+    if (now - lastStepAt > MIN_STEP_MS) {
+      lastStepAt = now;
+      stepTotal++;
+      renderSteps();
+    }
+  } else if (above && d < 0) {
+    above = false;
+  }
+}
+
+const stepsInput = document.getElementById('steps-input');
+function renderSteps() {
+  if (!stepsEdited) stepsInput.value = stepTotal - stepBase;
+  const n = parseInt(stepsInput.value, 10) || 0;
+  document.getElementById('steps-m').textContent = '≈ ' + Math.round(n * settings.stepLength) + ' m';
+}
+stepsInput.addEventListener('input', () => { stepsEdited = true; renderSteps(); });
+
+function resetSteps() {
+  stepBase = stepTotal;
+  stepsEdited = false;
+  renderSteps();
+}
+
+// ── Sensoren starten (iOS braucht eine Nutzeraktion für die Freigabe) ───────
+let sensorsStarted = false;
+// Freigabe anfragen; ohne Antwort nach 4 s trotzdem starten (manche Browser lösen nie auf).
+function requestSensorPermission(cls) {
+  if (typeof cls === 'undefined' || typeof cls.requestPermission !== 'function') return Promise.resolve('granted');
+  const timeout = new Promise(resolve => setTimeout(() => resolve('timeout'), 4000));
+  return Promise.race([cls.requestPermission().catch(() => 'denied'), timeout]);
+}
+
+async function startSensors() {
+  if (sensorsStarted) return;
+  // Beide Anfragen synchron im Klick starten, damit die Nutzeraktion (iOS) gilt
+  const [orientation, motion] = await Promise.all([
+    requestSensorPermission(window.DeviceOrientationEvent),
+    requestSensorPermission(window.DeviceMotionEvent),
+  ]);
+  if (orientation === 'denied' || motion === 'denied') {
+    toast('Sensoren nicht freigegeben – in den Browser-Einstellungen erlauben');
+    return;
+  }
+  if ('ondeviceorientationabsolute' in window) {
+    window.addEventListener('deviceorientationabsolute', onOrientationAbsolute);
+  } else {
+    window.addEventListener('deviceorientation', onOrientationFallback);
+  }
+  window.addEventListener('devicemotion', onMotion);
+  sensorsStarted = true;
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('sensor-hint').textContent =
+    'Schritte werden gezählt, solange die App offen ist. Die Zahl lässt sich vor „Add“ korrigieren.';
+  requestWakeLock();
+  // Ohne Kompass-Events (z. B. am Desktop) den Kurs manuell eingeben lassen
+  setTimeout(() => {
+    if (heading === null) {
+      document.getElementById('manual-heading').style.display = 'flex';
+      document.getElementById('sensor-hint').textContent = 'Kein Kompass gefunden – Kurs bitte manuell eingeben.';
+    }
+  }, 2000);
+}
+
+// ── Bildschirm anlassen ─────────────────────────────────────────────────────
+let wakeLock = null;
+async function requestWakeLock() {
+  if (!settings.wakeLock || !sensorsStarted || !('wakeLock' in navigator) || wakeLock) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (e) { /* z. B. Akkusparmodus */ }
+}
+function releaseWakeLock() { if (wakeLock) wakeLock.release(); }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') requestWakeLock();
+});
+
+// ── Add / Reset ─────────────────────────────────────────────────────────────
+async function addSegment() {
+  if (!db) { toast('Speicher nicht verfügbar – Eintrag kann nicht gespeichert werden'); return; }
+  const steps = parseInt(stepsInput.value, 10);
+  if (!(steps > 0)) { toast('Keine Schritte – erst ein Stück gehen'); return; }
+  let deg = heading;
+  if (deg === null) {
+    deg = parseInt(document.getElementById('heading-input').value, 10);
+    if (!(deg >= 0 && deg < 360)) { toast('Kein Kurs verfügbar'); return; }
+  }
+  // Vom aktiven Punkt fortsetzen, sofern er von heute ist
+  const active = settings.activeId;
+  const parentId = itemsOfDay(todayKey()).some(i => i.id === active) ? active : 0;
+  const id = await addItem({
+    heading: Math.round(deg) % 360,
+    steps,
+    timestamp: Math.floor(Date.now() / 1000),
+    parentId,
+  });
+  settings.activeId = id;   // neuer Eintrag ist der neue aktive Punkt
+  toast(`Hinzugefügt: ${steps} Schritte, ${Math.round(deg) % 360}° ${cardinal(deg)}`);
+  resetSteps();
+}
+
+// ── Karte ───────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('map');
+const ctx2d = canvas.getContext('2d');
+let mapDay = todayKey();
+let nodes = [];
+let view = { scale: 10, ox: 0, oy: 0 };   // Bildschirm = Modell * scale + offset (y gespiegelt)
+let needsFit = true;
+
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function mix(c1, c2, t) {
+  const p = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+  const a = p(c1), b = p(c2);
+  return 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')';
+}
+const toScreen = (x, y) => [x * view.scale + view.ox, -y * view.scale + view.oy];
+const toModel = (sx, sy) => [(sx - view.ox) / view.scale, -(sy - view.oy) / view.scale];
+
+function effectiveActiveId() {
+  if (mapDay !== todayKey() || !nodes.length) return 0;
+  const stored = settings.activeId;
+  return nodes.some(n => n.item.id === stored) ? stored : nodes[nodes.length - 1].item.id;
+}
+
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const r = canvas.getBoundingClientRect();
+  canvas.width = Math.round(r.width * dpr);
+  canvas.height = Math.round(r.height * dpr);
+  ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function fitView() {
+  const r = canvas.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  let minX = 0, maxX = 0, minY = 0, maxY = 0;   // Ursprung immer einschließen
+  for (const n of nodes) {
+    minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
+    minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+  }
+  const pad = 40;
+  const w = Math.max(maxX - minX, 1), h = Math.max(maxY - minY, 1);
+  view.scale = Math.min((r.width - 2 * pad) / w, (r.height - 2 * pad) / h, 200);
+  view.ox = r.width / 2 - view.scale * (minX + maxX) / 2;
+  view.oy = r.height / 2 + view.scale * (minY + maxY) / 2;
+}
+
+function drawArrow(x1, y1, x2, y2, color) {
+  ctx2d.strokeStyle = color; ctx2d.fillStyle = color; ctx2d.lineWidth = 3; ctx2d.lineCap = 'round';
+  ctx2d.beginPath(); ctx2d.moveTo(x1, y1); ctx2d.lineTo(x2, y2); ctx2d.stroke();
+  const ang = Math.atan2(y2 - y1, x2 - x1), s = 12, spread = 0.45;
+  if (Math.hypot(x2 - x1, y2 - y1) < s) return;
+  ctx2d.beginPath();
+  ctx2d.moveTo(x2, y2);
+  ctx2d.lineTo(x2 - s * Math.cos(ang - spread), y2 - s * Math.sin(ang - spread));
+  ctx2d.lineTo(x2 - s * Math.cos(ang + spread), y2 - s * Math.sin(ang + spread));
+  ctx2d.closePath(); ctx2d.fill();
+}
+
+function drawMap() {
+  const r = canvas.getBoundingClientRect();
+  ctx2d.clearRect(0, 0, r.width, r.height);
+  const low = css('--track-low'), high = css('--track-high');
+  const activeId = effectiveActiveId();
+
+  // Ursprung
+  const [ox, oy] = toScreen(0, 0);
+  ctx2d.strokeStyle = css('--muted'); ctx2d.lineWidth = 2;
+  ctx2d.beginPath(); ctx2d.arc(ox, oy, 6, 0, Math.PI * 2); ctx2d.stroke();
+
+  // Farbe nach Reihenfolge im Tag: orange (früh) → rot (spät)
+  const color = i => mix(low, high, nodes.length > 1 ? i / (nodes.length - 1) : 1);
+  nodes.forEach((n, i) => {
+    const [x1, y1] = toScreen(n.sx, n.sy), [x2, y2] = toScreen(n.x, n.y);
+    drawArrow(x1, y1, x2, y2, color(i));
+  });
+  nodes.forEach((n, i) => {
+    const [x, y] = toScreen(n.x, n.y);
+    if (n.item.id === activeId) {
+      ctx2d.strokeStyle = css('--active-ring'); ctx2d.lineWidth = 3;
+      ctx2d.beginPath(); ctx2d.arc(x, y, 13, 0, Math.PI * 2); ctx2d.stroke();
+    }
+    ctx2d.fillStyle = css('--surface');
+    ctx2d.beginPath(); ctx2d.arc(x, y, 8, 0, Math.PI * 2); ctx2d.fill();
+    ctx2d.fillStyle = color(i);
+    ctx2d.beginPath(); ctx2d.arc(x, y, 6, 0, Math.PI * 2); ctx2d.fill();
+  });
+}
+
+function renderMap() {
+  const dayItems = itemsOfDay(mapDay);
+  nodes = computePath(dayItems, settings.stepLength);
+  document.getElementById('map-title').textContent =
+    mapDay === todayKey() ? 'Heute' : dayTitle(mapDay);
+  resizeCanvas();
+  if (needsFit) { fitView(); needsFit = false; }
+  drawMap();
+
+  const steps = dayItems.reduce((s, i) => s + i.steps, 0);
+  const last = nodes[nodes.length - 1];
+  const disp = last ? Math.hypot(last.x, last.y) : 0;
+  document.getElementById('legend').innerHTML = dayItems.length
+    ? `${steps} Schritte · ${Math.round(steps * settings.stepLength)} m · Luftlinie ${Math.round(disp)} m
+       (Schrittweite ${settings.stepLength.toFixed(2)} m)<br>
+       früh<span class="bar"></span>spät · Long-Tap: Punkt aktiv setzen · Doppeltap: alles zeigen`
+    : 'Keine Einträge an diesem Tag.';
+}
+
+function hitNode(sx, sy) {
+  let best = null, bestD = 28;
+  for (const n of nodes) {
+    const [x, y] = toScreen(n.x, n.y);
+    const d = Math.hypot(x - sx, y - sy);
+    if (d < bestD) { best = n; bestD = d; }
+  }
+  return best;
+}
+
+function setActive(node) {
+  if (mapDay !== todayKey()) { toast('Fortsetzen ist nur für heutige Einträge möglich'); return; }
+  settings.activeId = node.item.id;
+  toast('Aktiver Punkt: nächstes Add setzt hier fort');
+  drawMap();
+}
+
+// Gesten: Pan (1 Finger), Pinch-Zoom (2 Finger), Long-Tap, Doppeltap, Tap = Info
+const pointers = new Map();
+let pinchStart = null, longTimer = null, downAt = null, lastTapAt = 0, moved = false;
+
+canvas.addEventListener('pointerdown', e => {
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* Pointer bereits weg */ }
+  pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+  if (pointers.size === 1) {
+    downAt = { x: e.offsetX, y: e.offsetY };
+    moved = false;
+    clearTimeout(longTimer);
+    longTimer = setTimeout(() => {
+      longTimer = null;
+      const n = hitNode(downAt.x, downAt.y);
+      if (n && !moved) setActive(n);
+    }, 550);
+  } else if (pointers.size === 2) {
+    clearTimeout(longTimer); longTimer = null;
+    const [a, b] = [...pointers.values()];
+    pinchStart = { dist: Math.hypot(a.x - b.x, a.y - b.y), scale: view.scale,
+                   model: toModel((a.x + b.x) / 2, (a.y + b.y) / 2) };
+  }
+});
+canvas.addEventListener('pointermove', e => {
+  const p = pointers.get(e.pointerId);
+  if (!p) return;
+  const dx = e.offsetX - p.x, dy = e.offsetY - p.y;
+  p.x = e.offsetX; p.y = e.offsetY;
+  if (pointers.size === 1) {
+    if (downAt && Math.hypot(e.offsetX - downAt.x, e.offsetY - downAt.y) > 8) {
+      moved = true; clearTimeout(longTimer); longTimer = null;
+    }
+    if (moved) { view.ox += dx; view.oy += dy; drawMap(); }
+  } else if (pointers.size === 2 && pinchStart) {
+    const [a, b] = [...pointers.values()];
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    view.scale = Math.max(0.05, Math.min(500, pinchStart.scale * dist / pinchStart.dist));
+    const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+    view.ox = cx - pinchStart.model[0] * view.scale;
+    view.oy = cy + pinchStart.model[1] * view.scale;
+    drawMap();
+  }
+});
+function endPointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinchStart = null;
+  if (pointers.size === 0 && longTimer) {
+    // kurzer Tap (Long-Tap hätte longTimer schon gelöst)
+    clearTimeout(longTimer); longTimer = null;
+    if (!moved) {
+      const now = performance.now();
+      if (now - lastTapAt < 300) { fitView(); drawMap(); lastTapAt = 0; return; }
+      lastTapAt = now;
+      const n = hitNode(e.offsetX, e.offsetY);
+      if (n) {
+        const i = n.item;
+        toast(`${i.steps} Schritte (${Math.round(i.steps * settings.stepLength)} m) · ${i.heading}° ${cardinal(i.heading)} · ${timeOf(i.timestamp)}`);
+      }
+    }
+  }
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const m = toModel(e.offsetX, e.offsetY);
+  view.scale = Math.max(0.05, Math.min(500, view.scale * Math.exp(-e.deltaY * 0.0015)));
+  view.ox = e.offsetX - m[0] * view.scale;
+  view.oy = e.offsetY + m[1] * view.scale;
+  drawMap();
+}, { passive: false });
+window.addEventListener('resize', () => { if (currentView === 'map') { resizeCanvas(); drawMap(); } });
+
+// Drei-Punkte-Menü
+const mapMenu = document.getElementById('map-menu');
+document.getElementById('btn-map-menu').addEventListener('click', e => {
+  e.stopPropagation(); mapMenu.classList.toggle('open');
+});
+document.addEventListener('click', () => mapMenu.classList.remove('open'));
+mapMenu.addEventListener('click', e => {
+  const action = e.target.dataset.action;
+  if (action === 'list') showView('list');
+  if (action === 'fit') { fitView(); drawMap(); }
+});
+
+// ── Liste eines Tages (Long-Tap = löschen) ──────────────────────────────────
+function renderList() {
+  const ul = document.getElementById('item-list');
+  const dayNodes = computePath(itemsOfDay(mapDay), settings.stepLength);
+  const activeId = mapDay === todayKey()
+    ? (dayNodes.some(n => n.item.id === settings.activeId) ? settings.activeId
+       : (dayNodes.length ? dayNodes[dayNodes.length - 1].item.id : 0))
+    : 0;
+  if (!dayNodes.length) { ul.innerHTML = '<li class="empty">Keine Einträge.</li>'; return; }
+  ul.innerHTML = dayNodes.map(n => {
+    const i = n.item;
+    return `<li data-id="${i.id}" class="${i.id === activeId ? 'active-item' : ''}">
+      <div class="main">${i.steps} Schritte (${Math.round(i.steps * settings.stepLength)} m)
+        <div class="sub">${i.heading}° ${cardinal(i.heading)} · X ${n.x.toFixed(1)} m, Y ${n.y.toFixed(1)} m</div></div>
+      <div class="sub">${timeOf(i.timestamp)}</div></li>`;
+  }).join('');
+}
+onLongPress(document.getElementById('item-list'), async li => {
+  const id = Number(li.dataset.id);
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  if (!confirm(`Eintrag löschen?\n${item.steps} Schritte · ${item.heading}° · ${timeOf(item.timestamp)}`)) return;
+  await deleteItem(id);
+  toast('Eintrag gelöscht');
+  renderList();
+  needsFit = true;
+});
+
+// ── Tage ────────────────────────────────────────────────────────────────────
+function renderDays() {
+  const ul = document.getElementById('day-list');
+  const counts = new Map();
+  for (const i of items) {
+    const k = dayKey(i.timestamp);
+    const c = counts.get(k) || { n: 0, steps: 0 };
+    c.n++; c.steps += i.steps;
+    counts.set(k, c);
+  }
+  const keys = [...counts.keys()].sort().reverse();
+  if (!keys.length) { ul.innerHTML = '<li class="empty">Noch keine Einträge.</li>'; return; }
+  ul.innerHTML = keys.map(k => {
+    const c = counts.get(k);
+    return `<li data-day="${k}">
+      <div class="main">${dayTitle(k)}
+        <div class="sub">${c.n} Einträge · ${c.steps} Schritte · ${Math.round(c.steps * settings.stepLength)} m</div></div>
+      <button class="btn" data-export="csv">CSV</button>
+      <button class="btn" data-export="json">JSON</button></li>`;
+  }).join('');
+}
+document.getElementById('day-list').addEventListener('click', e => {
+  const li = e.target.closest('li[data-day]');
+  if (!li) return;
+  const kind = e.target.dataset.export;
+  if (kind) { exportDay(li.dataset.day, kind); return; }
+  mapDay = li.dataset.day;
+  needsFit = true;
+  showView('map');
+});
+
+// ── Export (gleiche Spalten wie die Android-App, ohne Höhe/GPS) ─────────────
+function exportDay(key, kind) {
+  const nodes = computePath(itemsOfDay(key), settings.stepLength);
+  let text, type;
+  if (kind === 'csv') {
+    // heading;steps;x;y;timestamp;id;previous_id
+    text = nodes.map(n => [n.item.heading, n.item.steps, n.x, n.y, n.item.timestamp, n.item.id,
+      n.prev ? n.prev.item.id : 0].join(';') + ';').join('\n') + '\n';
+    type = 'text/csv';
+  } else {
+    text = JSON.stringify(nodes.map(n => ({
+      heading: n.item.heading, steps: n.item.steps, x: n.x, y: n.y,
+      timestamp: n.item.timestamp, id: n.item.id, previous_id: n.prev ? n.prev.item.id : 0,
+    })), null, 2);
+    type = 'application/json';
+  }
+  const name = `kompass_${key}.${kind}`;
+  const file = new File([text], name, { type });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: name }).catch(() => {});
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+}
+
+// ── Einstellungen ───────────────────────────────────────────────────────────
+const setStep = document.getElementById('set-step');
+const setSens = document.getElementById('set-sens');
+const setWake = document.getElementById('set-wake');
+function renderSettings() {
+  setStep.value = settings.stepLength.toFixed(2);
+  setSens.value = settings.sensitivity;
+  setWake.checked = settings.wakeLock;
+}
+setStep.addEventListener('change', () => {
+  const v = parseFloat(String(setStep.value).replace(',', '.'));
+  if (v >= 0.1 && v <= 3) { settings.stepLength = v; toast('Schrittweite gespeichert'); }
+  else toast('Ungültige Schrittweite (0,1 – 3 m)');
+  renderSettings(); renderSteps(); needsFit = true;
+});
+setSens.addEventListener('change', () => { settings.sensitivity = setSens.value; });
+setWake.addEventListener('change', () => {
+  settings.wakeLock = setWake.checked;
+  if (setWake.checked) requestWakeLock(); else releaseWakeLock();
+});
+
+// ── Navigation ──────────────────────────────────────────────────────────────
+const TITLES = { compass: 'Kompass', map: 'Karte', list: 'Einträge', days: 'Tage', settings: 'Einstellungen' };
+let currentView = 'compass';
+function showView(name) {
+  currentView = name;
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  document.querySelectorAll('nav button').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === (name === 'list' ? 'map' : name)));
+  document.getElementById('title').textContent =
+    name === 'list' ? (mapDay === todayKey() ? 'Einträge heute' : 'Einträge ' + dayTitle(mapDay)) : TITLES[name];
+  if (name === 'map') renderMap();
+  if (name === 'list') renderList();
+  if (name === 'days') renderDays();
+  if (name === 'settings') renderSettings();
+}
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.view === 'map' && currentView !== 'list') { mapDay = todayKey(); needsFit = true; }
+  showView(b.dataset.view);
+}));
+
+// ── Hilfen ──────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+function onLongPress(container, handler) {
+  let timer = null, start = null;
+  container.addEventListener('pointerdown', e => {
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+    start = { x: e.clientX, y: e.clientY };
+    timer = setTimeout(() => { timer = null; handler(li); }, 550);
+  });
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  container.addEventListener('pointermove', e => {
+    if (timer && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) cancel();
+  });
+  container.addEventListener('pointerup', cancel);
+  container.addEventListener('pointercancel', cancel);
+  container.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+// ── Start ───────────────────────────────────────────────────────────────────
+document.getElementById('btn-start').addEventListener('click', startSensors);
+document.getElementById('btn-reset').addEventListener('click', () => { resetSteps(); toast('Schritte zurückgesetzt'); });
+document.getElementById('btn-add').addEventListener('click', addSegment);
+renderSteps();
+
+openDb().then(d => { db = d; return loadItems(); })
+  .catch(() => toast('Speicher nicht verfügbar – Einträge werden nicht gespeichert'));
+
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

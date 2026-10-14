@@ -41,6 +41,7 @@ public class StepModel implements SensorEventListener {
     private Sensor stepSensor;
 
     private int steps;
+    private boolean hasReading = false;
 
     public StepModel(Activity ctx) {
         this.ctx = ctx;
@@ -69,6 +70,11 @@ public class StepModel implements SensorEventListener {
         return steps;
     }
 
+    /** true, sobald der Schrittzähler mindestens einen Wert geliefert hat. */
+    public boolean hasReading() {
+        return hasReading;
+    }
+
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
 
@@ -78,5 +84,6 @@ public class StepModel implements SensorEventListener {
     public void onSensorChanged(SensorEvent event) {
         Log.i("NX", "step update: " + event.values[0]);
         steps = (int)event.values[0];
+        hasReading = true;
     }
 }

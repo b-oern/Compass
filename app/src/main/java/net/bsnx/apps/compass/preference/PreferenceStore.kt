@@ -38,6 +38,7 @@ class PreferenceStore(context: Context, lifecycle: Lifecycle) {
     val screenOrientationLocked = MutableLiveData<Boolean>()
     val nightMode = MutableLiveData<AppNightMode>()
     val accessLocationPermissionRequested = MutableLiveData<Boolean>()
+    val gpsTracking = MutableLiveData<Boolean>()
 
     private val preferenceStoreLifecycleObserver = PreferenceStoreLifecycleObserver()
 
@@ -57,6 +58,7 @@ class PreferenceStore(context: Context, lifecycle: Lifecycle) {
         updateScreenOrientationLocked()
         updateNightMode()
         updateAccessLocationPermissionRequested()
+        updateGpsTracking()
 
         lifecycle.addObserver(preferenceStoreLifecycleObserver)
     }
@@ -94,6 +96,7 @@ class PreferenceStore(context: Context, lifecycle: Lifecycle) {
                 PreferenceConstants.ACCESS_LOCATION_PERMISSION_REQUESTED -> {
                     updateAccessLocationPermissionRequested()
                 }
+                PreferenceConstants.GPS_TRACKING -> updateGpsTracking()
             }
         }
     }
@@ -138,6 +141,14 @@ class PreferenceStore(context: Context, lifecycle: Lifecycle) {
         }
     }
 
+    // Nur lesend: wird ausschließlich über den Einstellungsdialog geändert.
+    private fun updateGpsTracking() {
+        val storedValue = sharedPreferences.getBoolean(PreferenceConstants.GPS_TRACKING, false)
+        if (gpsTracking.value != storedValue) {
+            gpsTracking.value = storedValue
+        }
+    }
+
     private fun getTrueNorthObserver(): (t: Boolean) -> Unit = {
         sharedPreferences.edit {
             putBoolean(PreferenceConstants.TRUE_NORTH, it)
@@ -179,5 +190,38 @@ class PreferenceStore(context: Context, lifecycle: Lifecycle) {
 
     fun getStepCount(defaultValue : Int = 0) : Int {
         return sharedPreferences.getInt("stepCount", defaultValue)
+    }
+
+    companion object {
+        /** Erlaubter Bereich der Schrittweite in Metern. */
+        private const val STEP_LENGTH_MIN = 0.1f
+        private const val STEP_LENGTH_MAX = 3f
+
+        /** Parst eine Schrittweite ("0,9" oder "0.9"); null wenn ungültig. */
+        @JvmStatic
+        fun parseStepLength(value: String?): Float? =
+            value?.trim()?.replace(',', '.')?.toFloatOrNull()
+                ?.takeIf { it in STEP_LENGTH_MIN..STEP_LENGTH_MAX }
+
+        /** Schrittweite in Metern aus den Einstellungen, sonst der Default. */
+        @JvmStatic
+        fun readStepLength(context: Context): Float =
+            parseStepLength(
+                PreferenceManager.getDefaultSharedPreferences(context)
+                    .getString(PreferenceConstants.STEP_LENGTH, null)
+            ) ?: PreferenceConstants.STEP_LENGTH_DEFAULT
+
+        /** ID des aktiven PathItems, 0 wenn keins gesetzt ist. */
+        @JvmStatic
+        fun readActiveItemId(context: Context): Int =
+            PreferenceManager.getDefaultSharedPreferences(context)
+                .getInt(PreferenceConstants.ACTIVE_ITEM_ID, 0)
+
+        @JvmStatic
+        fun writeActiveItemId(context: Context, id: Int) {
+            PreferenceManager.getDefaultSharedPreferences(context).edit {
+                putInt(PreferenceConstants.ACTIVE_ITEM_ID, id)
+            }
+        }
     }
 }

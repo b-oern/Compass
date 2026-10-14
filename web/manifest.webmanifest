@@ -1,0 +1,16 @@
+{
+  "name": "Kompass Pfad",
+  "short_name": "Kompass",
+  "description": "Koppelnavigation mit Kompass und Schritten",
+  "start_url": "app.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fafafa",
+  "theme_color": "#c62828",
+  "lang": "de",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

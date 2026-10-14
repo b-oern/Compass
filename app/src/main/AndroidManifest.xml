@@ -14,6 +14,9 @@
             android:theme="@style/Theme.App"
             tools:targetApi="31">
         <activity
+                android:name=".DaysActivity"
+                android:exported="false" />
+        <activity
                 android:name=".ListActivity"
                 android:exported="false" />
         <activity
@@ -50,12 +53,18 @@
     <uses-feature
             android:name="android.hardware.sensor.stepcounter"
             android:required="false" />
+    <uses-feature
+            android:name="android.hardware.sensor.barometer"
+            android:required="false" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
-    <!-- <uses-permission android:name="android.permission.health.READ_SKIN_TEMPERATURE" />
+    <!--
+ <uses-permission android:name="android.permission.health.READ_SKIN_TEMPERATURE" />
     <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> -->
+    -->
+    <!-- GPS-Aufzeichnung als Referenz zur Schrittmessung (Einstellung, default aus) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
