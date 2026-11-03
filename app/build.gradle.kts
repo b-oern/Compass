@@ -35,7 +35,8 @@ android {
 
     defaultConfig {
         applicationId = "net.bsnx.apps.compass"
-        minSdk = 23
+        // NxDroidLib (NWeb-Upload) setzt minSdk 26 voraus
+        minSdk = 26
         targetSdk = 36
         versionCode = 31
         versionName = "1.14.11"
@@ -92,6 +93,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.oss.licenses.parser)
     implementation(libs.androidx.activity)
+    implementation(project(":nxdroidlib"))
 
     testImplementation(libs.junit)
 

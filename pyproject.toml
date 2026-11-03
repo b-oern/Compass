@@ -1,0 +1,28 @@
+[project]
+name = "compass"
+version = "1.0.0"
+description = "nweb-Render fuer Pfade der App Compass: Koppelnavigation mit Kompass, Schritten, Hoehe und GPS"
+readme = "docs/nweb_render.md"
+authors = [{ name = "Bjoern Salgert", email = "bjoern.salgert@hs-duesseldorf.de" }]
+license = { text = "GPL-3.0-or-later" }
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+]
+dependencies = ["nweb>=1.0.4"]
+
+[project.urls]
+Homepage = "https://bsnx.net/4.0/group/pynwebclient"
+
+# Render fuer Dokumente mit kind "compass", siehe nweb/doc.py
+[project.entry-points.nweb_doc]
+compass = "compass.render:PathRender"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["compass"]

@@ -12,3 +12,7 @@
 
 ### Fastlane ###
 fastlane/report.xml
+
+### Python (nweb-Render compass) ###
+__pycache__/
+*.egg-info/

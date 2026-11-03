@@ -38,6 +38,11 @@
                 app:dialogMessage="Schrittweite in Metern"
                 app:defaultValue="0.9" />
 
+        <Preference
+                app:key="nweb_account"
+                app:title="[NX] NWeb-Konto"
+                app:summary="Für „Hochladen (NWeb)“ in der Tagesliste" />
+
         <SwitchPreferenceCompat
                 app:key="gps_tracking"
                 app:title="[NX] GPS aufzeichnen"

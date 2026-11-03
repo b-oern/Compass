@@ -100,7 +100,8 @@ public class DaysActivity extends AppCompatActivity {
                 "Show List",
                 "CSV Export",
                 "JSON Export",
-                "Send to Map"
+                "Send to Map",
+                "Hochladen (NWeb)"
         };
         new AlertDialog.Builder(this)
                 .setTitle("Aktion auswählen")
@@ -117,6 +118,9 @@ public class DaysActivity extends AppCompatActivity {
                             break;
                         case 3:
                             actionShowMap(item);
+                            break;
+                        case 4:
+                            PathUpload.start(this, item.date);
                             break;
                     }
                 })

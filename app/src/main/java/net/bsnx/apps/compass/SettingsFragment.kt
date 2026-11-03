@@ -31,6 +31,7 @@ import androidx.preference.PreferenceFragmentCompat
 import net.bsnx.apps.compass.db.CompassDB
 import net.bsnx.apps.compass.preference.PreferenceConstants
 import net.bsnx.apps.compass.preference.PreferenceStore
+import net.bsnx.nxdroidlib.NWebAccount
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
@@ -72,7 +73,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
             startActivity(intent)
             true
         }
+        findPreference<Preference>(NWEB_ACCOUNT)?.intent = NWebAccount.openSettings(requireContext())
         // TODO addPreference
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Zusammenfassung nach Rueckkehr aus der Konto-Seite aktualisieren
+        findPreference<Preference>(NWEB_ACCOUNT)?.summary = NWebAccount.summary(requireContext())
     }
 
     fun addPreference(title: String, description: String, onClick: () -> Unit) {
@@ -85,5 +93,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
         }
         preferenceScreen.addPreference(preference)
+    }
+
+    private companion object {
+        const val NWEB_ACCOUNT = "nweb_account"
     }
 }

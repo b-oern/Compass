@@ -45,3 +45,8 @@ dependencyResolutionManagement {
 rootProject.name = "Compass"
 
 include(":app")
+
+// Gemeinsame Bibliothek (NWeb-Konto, Upload), liegt neben dem Projekt unter dev/NxDroidLib
+// https://github.com/nxware/NxDroidLib.git
+include(":nxdroidlib")
+project(":nxdroidlib").projectDir = file("../NxDroidLib/lib")
