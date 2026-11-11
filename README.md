@@ -4,6 +4,8 @@
 
 # Compass
 
+ - [Webversion](app.html)
+
 ### Simple and beautiful compass for Android
 
 This project is intended to offer a simple and good-looking compass for Android
