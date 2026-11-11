@@ -1,7 +1,3 @@
-<div align="center">
-
-<img src="fastlane/metadata/android/en-US/images/icon.png" alt="Icon" height="100"/>
-
 # Compass
 
  - [Webversion](app.html)
