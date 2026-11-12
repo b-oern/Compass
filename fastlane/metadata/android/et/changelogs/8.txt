@@ -1,1 +1,0 @@
-- parandasime vigased kraadid, mis tekkisid ekraani pööramisel 180°

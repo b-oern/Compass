@@ -1,4 +1,0 @@
-- Tùy chọn khóa hoặc theo dõi xoay màn hình
-- Cải thiện tỷ lệ la bàn
-- Bản dịch tiếng Hà Lan
-- Bản dịch tiếng Phần Lan

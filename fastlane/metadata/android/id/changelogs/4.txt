@@ -1,2 +1,0 @@
-- Kompas tidak bergetar lagi
-- Menambahkan petunjuk untuk kalibrasi sensor

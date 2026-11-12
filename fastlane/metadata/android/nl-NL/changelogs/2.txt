@@ -1,2 +1,0 @@
-- Readable cardinal direction
-- Sensor accuracy dialog

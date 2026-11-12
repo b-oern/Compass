@@ -1,1 +1,1 @@
-Einfacher und schöner Kompass
+Kompass mit Schrittzähler: Wege als Linienzug aufzeichnen

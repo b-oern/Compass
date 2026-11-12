@@ -1,1 +1,0 @@
-- Correction d'un crash quand le dialogue "à propos" était ouvert plusieurs fois

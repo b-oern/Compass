@@ -1,3 +1,0 @@
-- Menambahkan terjemahan bahasa Swedia
-- Menambahkan terjemahan bahasa Ukraina
-- Menambahkan terjemahan bahasa Mandarin

@@ -1,2 +1,0 @@
-- Direction cardinale lisible
-- Dialogue sur la sensibilité du capteur

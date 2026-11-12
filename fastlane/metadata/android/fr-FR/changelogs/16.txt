@@ -1,3 +1,0 @@
-- Complété la traduction en tchèque
-- Ajouté la traduction en italien
-- Ajouté la traduction en vietnamien

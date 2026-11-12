@@ -1,5 +1,0 @@
-- Obracająca się róża wiatrów
-- Tekst stopni
-- Tekst kierunków świata
-- Tryb Dzień i Noc
-- Tłumaczenia na język angielski i niemiecki

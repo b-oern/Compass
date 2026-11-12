@@ -1,1 +1,0 @@
-- Correction des degrés incorrects lors de la rotation de l'écran à 180°

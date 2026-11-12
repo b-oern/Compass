@@ -1,2 +1,0 @@
-- Added Uzbek translation
-- Improved support for different screen sizes

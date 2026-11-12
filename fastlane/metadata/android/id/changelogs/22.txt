@@ -1,3 +1,0 @@
-- Menambahkan terjemahan bahasa Jepang
-- Menambahkan terjemahan bahasa Hindi
-- Memperbarui terjemahan bahasa Turki

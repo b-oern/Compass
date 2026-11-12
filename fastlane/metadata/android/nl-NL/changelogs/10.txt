@@ -1,5 +1,0 @@
-- Czech translation
-- Turkish translation
-- Greek translation
-- Bigger compass in landscape mode
-- Monochrome icon

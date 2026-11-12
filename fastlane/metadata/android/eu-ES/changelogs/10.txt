@@ -1,5 +1,0 @@
-- Txekierazko itzulpena
-- Turkierazko itzulpena
-- Grezierazko itzulpena
-- Iparrorratz handiagoa modu horizontalean
-- Ikono monokromoa

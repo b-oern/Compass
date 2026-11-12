@@ -1,3 +1,0 @@
-- Strona informacyjna
-- Przerobiona ikona aplikacji
-- Ulepszona obsługa trybu nocnego

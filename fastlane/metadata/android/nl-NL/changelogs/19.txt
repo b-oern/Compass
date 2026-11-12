@@ -1,2 +1,0 @@
-- Completed Turkish translation
-- Completed Finnish translation

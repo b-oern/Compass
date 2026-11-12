@@ -1,5 +1,0 @@
-- Tjeckisk översättning
-- Turkisk översättning
-- Grekisk översättning
-- Större kompass i landskapsläge
-- Monokrom ikon

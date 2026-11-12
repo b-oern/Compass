@@ -1,5 +1,0 @@
-- Kompas berputar naik
-- Teks derajat
-- Teks arah mata angin
-- Mode Siang & Malam
-- Terjemahan bahasa Inggris dan Jerman

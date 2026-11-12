@@ -1,14 +1,21 @@
-Du bekommst genau das was du erwartest.
-Einen einfachen und schönen Kompass.
+Mehr als ein Kompass: Kompass Pfad zeichnet deinen Weg als Linienzug auf – ganz ohne GPS.
 
-Inhalt:
-* Kann sowohl zum magnetischen Nordpol als auch zum geografischen Nordpol zeigen
-* Zeigt die exakte Gradzahl und Himmelsrichtung an
-* Zeigt den Sensor Status an
+Die Richtung kommt vom Kompass, die Strecke vom Schrittzähler. Bei jedem Punkt, den du setzt, wird das zurückgelegte Teilstück aus Blickrichtung und gezählten Schritten (mal deiner Schrittweite) berechnet und an den Pfad angehängt. So entsteht Schritt für Schritt eine Skizze deiner Route.
+
+Pfad aufzeichnen:
+* Linienzug aus Kompassrichtung und Schrittzähler
+* Einstellbare Schrittweite (0,1 – 3 m)
+* Höhenmessung per Barometer, Segmente farbig nach Höhe dargestellt
+* Optional: GPS parallel aufzeichnen und die Abweichung zum Schrittpfad vergleichen
+* Aufzeichnung an einem beliebigen Punkt des Tages fortsetzen
+* Tagesansicht und Listenansicht aller Einträge
+* Export als CSV oder JSON
+
+Kompass:
+* Zeigt zum magnetischen oder geografischen Nordpol
+* Exakte Gradzahl und Himmelsrichtung
+* Anzeige des Sensorstatus
 * Haptisches Feedback
-* Light und Dark Theme
-* Keine Werbung
-* Keine Tracker
-* Keine Belästigung
+* Helles und dunkles Design
 
-Viel Spaß!
+Keine Werbung. Keine Tracker.

@@ -1,4 +1,0 @@
-- Erakutsi beti 0º eta inoiz ez 360º borobiltzean
-- Norvegierazko itzulpena
-- Suomierazko itzulpena osatu
-- Errusierazko itzulpena osatu

@@ -1,2 +1,0 @@
-- Arah mata angin yang dapat dibaca
-- Dialog akurasi sensor

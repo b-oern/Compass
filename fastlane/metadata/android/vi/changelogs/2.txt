@@ -1,2 +1,0 @@
-- Hướng chính có thể đọc được
-- Hộp thoại độ chính xác của cảm biến

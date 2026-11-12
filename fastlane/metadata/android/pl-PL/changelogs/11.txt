@@ -1,4 +1,0 @@
-- Funkcjonalność północy geograficznej
-- Ustawienia aplikacji
-- Tłumaczenie francuskie
-- Wsparcie preferencji językowych aplikacji

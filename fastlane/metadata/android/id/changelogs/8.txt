@@ -1,1 +1,0 @@
-- Memperbaiki derajat yang salah saat layar diputar 180°

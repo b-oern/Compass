@@ -1,2 +1,0 @@
-- Kompass enam ei värise
-- Lisasime nõuande anduri kalibreerimise osas

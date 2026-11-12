@@ -1,3 +1,0 @@
-- Lisaime Rakenduse teabe vaate
-- Uuendasime rakenduse ikooni
-- Parandasime toimimist öörežiimis

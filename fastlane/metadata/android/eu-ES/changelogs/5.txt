@@ -1,4 +1,0 @@
-- Pantailaren biraketa jarraitu edo blokeatzeko aukera
-- Iparrorratzaren eskalatzea hobetu
-- Nederlanderazko itzulpena
-- Suomierazko itzulpena

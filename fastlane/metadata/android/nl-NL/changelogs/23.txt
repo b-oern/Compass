@@ -1,3 +1,0 @@
-- Added Swedish translation
-- Added Ukrainian translation
-- Added Chinese translation

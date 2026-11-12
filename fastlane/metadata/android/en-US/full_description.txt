@@ -1,14 +1,21 @@
-You’ll get exactly what you expect.
-A simple and beautiful compass.
+More than a compass: Compass Path records your route as a polyline – no GPS required.
 
-Features:
-* Can point to magnetic north as well as true north
-* Shows exact degrees and cardinal direction
+The direction comes from the compass, the distance from the step counter. Every time you add a point, the segment you walked is calculated from your heading and the counted steps (times your step length) and appended to the path. Step by step, a sketch of your route takes shape.
+
+Path recording:
+* Polyline built from compass heading and step counter
+* Adjustable step length (0.1 – 3 m)
+* Altitude via barometer, segments colored by elevation
+* Optional: record GPS alongside and compare its deviation from the step path
+* Continue recording from any point of the current day
+* Day view and list view of all entries
+* Export as CSV or JSON
+
+Compass:
+* Points to magnetic north or true north
+* Exact degrees and cardinal direction
 * Displays sensor status
 * Haptic feedback
-* Light and Dark theme
-* No advertisements
-* No trackers
-* No annoyance
+* Light and dark theme
 
-Have fun!
+No advertisements. No trackers.

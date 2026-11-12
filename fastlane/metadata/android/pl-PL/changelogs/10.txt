@@ -1,5 +1,0 @@
-- Tłumaczenie czeskie
-- Tłumaczenie tureckie
-- Tłumaczenie greckie
-- Większy kompas w trybie poziomym
-- Monochromatyczna ikona

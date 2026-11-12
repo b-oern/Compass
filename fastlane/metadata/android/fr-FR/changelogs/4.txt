@@ -1,2 +1,0 @@
-- La boussole ne tremble plus
-- Ajout de guide pour calibrer le capteur

@@ -1,3 +1,0 @@
-- Added Japanese translation
-- Added Hindi translation
-- Updated Turkish translation

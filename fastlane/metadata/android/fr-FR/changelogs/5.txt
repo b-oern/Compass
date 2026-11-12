@@ -1,4 +1,0 @@
-- Options pour bloquer ou suivre la rotation d'écran
-- Amélioration du changement de taille de la boussole
-- Traduction en néerlandais
-- Traduction en finnois

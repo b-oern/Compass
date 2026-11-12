@@ -1,4 +1,0 @@
-- Alternativ att låsa eller följa skärmrotation
-- Förbättrad kompassförstoring
-- Nederländsk översättning
-- Finsk översättning

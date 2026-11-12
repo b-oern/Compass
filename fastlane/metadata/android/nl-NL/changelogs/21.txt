@@ -1,4 +1,0 @@
-- Added Spanish translation
-- Added Danish translation
-- Updated French translation
-- Updated Norwegian translation

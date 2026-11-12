@@ -1,5 +1,0 @@
-- Tillagd vy för att visa tredjepartslicenser
-- Tamilsk översättning tillagd
-- Brasiliansk portugisisk översättning tillagd
-- Persisk översättning tillagd
-- Polsk översättning tillagd

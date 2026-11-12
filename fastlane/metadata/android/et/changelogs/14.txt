@@ -1,4 +1,0 @@
-- ümardamisels näitame alati 0° ja mitte kunagi 360°
-- norra keele tõlge
-- valmis soome keele tõlge
-- valmis vene keele tõlge

@@ -1,2 +1,0 @@
-- La brújula ya no tiembla
-- Se agregó una sugerencia para la calibración del sensor

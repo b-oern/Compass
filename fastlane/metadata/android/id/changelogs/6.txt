@@ -1,3 +1,0 @@
-- Terjemahan bahasa Rusia
-- Tampilan kompas yang lebih besar
-- Memperbaiki posisi yang salah dalam orientasi lanskap

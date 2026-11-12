@@ -1,2 +1,0 @@
-- Menambahkan terjemahan bahasa Uzbek
-- Peningkatan dukungan untuk berbagai ukuran layar

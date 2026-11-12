@@ -1,3 +1,0 @@
-- Halaman tentang
-- Ikon aplikasi yang didesain ulang
-- Penanganan mode malam yang ditingkatkan

@@ -1,3 +1,0 @@
-- lisandus rootsi keele tõlge
-- lisandus ukraina keele tõlge
-- lisandus hiina keele tõlge

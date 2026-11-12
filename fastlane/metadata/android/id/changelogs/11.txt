@@ -1,4 +1,0 @@
-- Fungsionalitas utara yang sebenarnya
-- Pengaturan aplikasi
-- Terjemahan bahasa Prancis
-- Mendukung preferensi bahasa per aplikasi

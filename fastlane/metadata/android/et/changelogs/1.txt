@@ -1,5 +1,0 @@
-- pöörlev tuulteroos kompassil
-- kraadide tekst
-- ilmakaarte tekst
-- päeva- ja öövaade
-- inglise ja saksa keelte tõlked

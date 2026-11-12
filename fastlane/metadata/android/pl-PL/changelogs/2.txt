@@ -1,2 +1,0 @@
-- Czytelne kierunki świata
-- Dialog dokładności sensora

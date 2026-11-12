@@ -1,3 +1,0 @@
-- Rosyjskie tłumaczenie
-- Większy widok kompasu
-- Naprawiono nieprawidłowe łożysko w orientacji poziomej

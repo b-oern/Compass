@@ -1,6 +1,0 @@
-- Arabisk översättning tillagd
-- Uppdaterad bulgarisk översättning
-- Uppdaterad kinesisk översättning
-- Uppdaterad tjeckisk översättning
-- Uppdaterad grekisk översättning
-- Uppdaterad tamilsk översättning
